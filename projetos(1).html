@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projetos | Ciência da Computação – UNIPAMPA</title>
+<!--
+  Área de Projetos do site do curso de Ciência da Computação (UNIPAMPA),
+  feita para ser carregada dentro de um <iframe> na página "Projetos".
+
+  ▸ Os dados ficam em PROJETOS, mais abaixo. Para carregar de um arquivo JSON
+    externo, use o parâmetro ?dados=URL_DO_JSON no src do iframe
+    (o JSON deve ser uma lista com os mesmos campos).
+  ▸ A altura do iframe se ajusta sozinha se a página-mãe tiver o trecho de
+    script que está no fim deste arquivo (comentário "NA PÁGINA-MÃE").
+-->
+<style>
+  :root {
+    --texto: #2b2b2b;
+    --texto-suave: #5f5f5f;
+    --link: #24890d;
+    --verde: #009045;
+    --verde-escuro: #007337;
+    --divisoria: #e5e5e5;
+    --borda-campo: #c8c8c8;
+    --fundo-painel: #f7f7f7;
+    --cinza-menu: #9d9d9c;
+
+    --pesquisa: #1f5fa8;  --pesquisa-fundo: #e7eff9;
+    --ensino: #9a5c00;    --ensino-fundo: #fcf1de;
+    --extensao: #7a3e9d;  --extensao-fundo: #f3eaf9;
+    --inovacao: #00796b;  --inovacao-fundo: #e1f3f0;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #fff; }
+  body {
+    font-family: Arial, "Liberation Sans", Helvetica, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--texto);
+  }
+  a { color: var(--link); }
+  a:hover { color: var(--verde-escuro); }
+  :focus-visible { outline: 3px solid #0b5fff; outline-offset: 2px; }
+
+  .projetos { max-width: 100%; padding: 2px 2px 24px; }
+
+  .intro { margin: 0 0 20px; max-width: 62ch; }
+
+  /* ---------- Filtros ---------- */
+  .filtros {
+    background: var(--fundo-painel);
+    border: 1px solid var(--divisoria);
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .campo + .campo { margin-top: 18px; }
+  .rotulo { display: block; font-weight: bold; font-size: 14px; margin-bottom: 6px; }
+
+  .busca { display: flex; }
+  .busca input {
+    flex: 1; min-width: 0;
+    font: inherit; font-size: 16px;
+    padding: 10px 12px;
+    border: 1px solid var(--borda-campo); border-right: 0;
+    background: #fff; color: var(--texto);
+    border-radius: 0;
+  }
+  .busca input::placeholder { color: #8a8a8a; }
+  .busca button {
+    width: 46px; border: 0; background: var(--verde-escuro); color: #fff;
+    display: grid; place-items: center; cursor: pointer;
+  }
+  .busca button:hover { background: var(--verde); }
+
+  fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+  legend { padding: 0; }
+  .tipos { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tipo-opcao { position: relative; }
+  .tipo-opcao input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .tipo-opcao input + span {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 14px;
+    border: 1px solid var(--borda-campo); border-radius: 999px;
+    background: #fff; font-size: 15px; white-space: nowrap;
+  }
+  .tipo-opcao .ponto { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .tipo-opcao input:checked + span { background: var(--verde); border-color: var(--verde); color: #fff; font-weight: bold; }
+  .tipo-opcao input:checked + span .ponto { background: #fff !important; }
+  .tipo-opcao input:focus-visible + span { outline: 3px solid #0b5fff; outline-offset: 2px; }
+  .tipo-opcao input:disabled + span { color: #9a9a9a; border-style: dashed; }
+  .tipo-opcao .qtd { font-weight: normal; opacity: .85; }
+
+  .selects { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  select {
+    width: 100%; font: inherit; font-size: 16px; color: var(--texto);
+    padding: 9px 36px 9px 12px;
+    border: 1px solid var(--borda-campo); border-radius: 0;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0h12L6 8z' fill='%236e6e6e'/%3E%3C/svg%3E") no-repeat right 12px center;
+    appearance: none; -webkit-appearance: none;
+  }
+  select.ativo { border-color: var(--verde); box-shadow: inset 0 0 0 1px var(--verde); }
+
+  /* ---------- Resultado ---------- */
+  .barra-resultado { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+  .contagem { font-weight: bold; font-size: 17px; margin: 0; }
+  .ordenar { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--texto-suave); }
+  .ordenar select { width: auto; font-size: 14px; padding: 6px 32px 6px 10px; }
+
+  .ativos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0 0; }
+  .ativos:empty { display: none; }
+  .filtro-ativo {
+    font: inherit; font-size: 14px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 4px 12px; border-radius: 999px;
+    background: #e8f4ec; border: 1px solid #aad2b9; color: var(--verde-escuro);
+  }
+  .filtro-ativo:hover { background: #d9eee0; }
+  .filtro-ativo .x { font-size: 16px; line-height: 1; }
+  .limpar { font: inherit; font-size: 14px; background: none; border: 0; padding: 4px 2px; color: var(--link); text-decoration: underline; cursor: pointer; }
+
+  /* ---------- Cartões ---------- */
+  .lista { list-style: none; margin: 18px 0 0; padding: 0; }
+  .projeto {
+    display: grid; grid-template-columns: 96px 1fr; gap: 0 24px;
+    padding: 22px 22px 20px 24px;
+    border: 1px solid var(--divisoria);
+    border-left: 5px solid var(--cor-tipo, var(--cinza-menu));
+    background: #fff;
+  }
+  .projeto + .projeto { margin-top: 16px; }
+
+  .foto { margin: 0; text-align: center; }
+  .foto img, .foto .sem-foto {
+    width: 96px; height: 96px; border-radius: 50%; object-fit: cover; display: block;
+    border: 1px solid var(--divisoria);
+  }
+  .foto .sem-foto { background: #dededd; }
+
+  .etiquetas { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .etiqueta { font-size: 13px; font-weight: bold; padding: 2px 9px; border-radius: 3px; }
+  .etiqueta.tipo { color: var(--cor-tipo); background: var(--fundo-tipo); }
+  .etiqueta.lab { color: var(--texto-suave); border: 1px solid var(--borda-campo); font-weight: normal; }
+
+  .projeto h3 { font-size: 20px; line-height: 1.3; margin: 0 0 4px; }
+  .coord { margin: 0 0 8px; font-size: 15px; color: var(--texto-suave); }
+  .coord strong { color: var(--texto); }
+  .desc { margin: 0 0 10px; color: #4a4a4a; }
+  .dados { margin: 0 0 12px; font-size: 14px; color: var(--texto-suave); display: flex; flex-wrap: wrap; gap: 2px 20px; }
+  .dados dt { display: inline; font-weight: bold; }
+  .dados dd { display: inline; margin: 0 0 0 4px; }
+
+  .contato { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+  .email { display: inline-flex; align-items: center; gap: 8px; font-size: 16px; word-break: break-all; }
+  .email svg { flex: none; }
+  .copiar {
+    font: inherit; font-size: 14px; cursor: pointer;
+    padding: 5px 12px; background: #fff; color: var(--texto);
+    border: 1px solid var(--borda-campo);
+  }
+  .copiar:hover { border-color: var(--verde); color: var(--verde-escuro); }
+  .copiar.ok { border-color: var(--verde); color: var(--verde-escuro); }
+
+  .mais-wrap { text-align: center; margin-top: 20px; }
+  .mais {
+    font: inherit; cursor: pointer; padding: 10px 22px;
+    background: #fff; color: var(--texto); border: 1px solid var(--borda-campo);
+  }
+  .mais:hover { border-color: var(--verde); color: var(--verde-escuro); }
+
+  .vazio {
+    margin-top: 18px; padding: 32px 20px; text-align: center;
+    background: var(--fundo-painel); border: 1px solid var(--divisoria);
+  }
+  .vazio p { margin: 0 0 6px; }
+  .vazio strong { font-size: 17px; }
+
+  .origem { margin: 24px 0 0; font-size: 13px; font-style: italic; color: var(--texto-suave); }
+
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (max-width: 640px) {
+    .filtros { padding: 16px; }
+    .selects { grid-template-columns: 1fr; }
+    .projeto { grid-template-columns: 64px 1fr; gap: 0 14px; padding: 16px 14px 16px 16px; }
+    .foto img, .foto .sem-foto { width: 64px; height: 64px; }
+    .projeto h3 { font-size: 18px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .copiar, .mais, .filtro-ativo, .busca button { transition: background-color .15s, border-color .15s, color .15s; }
+  }
+</style>
+</head>
+<body>
+<main class="projetos">
+
+  <p class="intro">Projetos de pesquisa, ensino, extensão e inovação do curso. Use a busca e os filtros para encontrar um projeto e fale direto com a equipe pelo e-mail.</p>
+
+  <form class="filtros" role="search" aria-label="Filtrar projetos" onsubmit="return false">
+    <div class="campo">
+      <label class="rotulo" for="busca">Buscar projeto</label>
+      <div class="busca">
+        <input id="busca" type="search" placeholder="Título, palavra-chave, professor(a) ou nº de registro" autocomplete="off">
+        <button type="submit" aria-label="Buscar">
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.5 15.5 22 22" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <fieldset class="campo">
+      <legend class="rotulo">Tipo de projeto</legend>
+      <div class="tipos" id="tipos"></div>
+    </fieldset>
+
+    <div class="campo selects">
+      <div>
+        <label class="rotulo" for="f-lab">Laboratório de pesquisa</label>
+        <select id="f-lab"></select>
+      </div>
+      <div>
+        <label class="rotulo" for="f-prof">Professor(a) coordenador(a)</label>
+        <select id="f-prof"></select>
+      </div>
+    </div>
+  </form>
+
+  <div class="barra-resultado">
+    <p class="contagem" id="contagem" aria-live="polite"></p>
+    <label class="ordenar">Ordenar
+      <select id="ordem">
+        <option value="recentes">Mais recentes</option>
+        <option value="titulo">Título (A–Z)</option>
+      </select>
+    </label>
+  </div>
+  <div class="ativos" id="ativos" aria-label="Filtros aplicados"></div>
+
+  <ul class="lista" id="lista"></ul>
+
+  <div class="vazio" id="vazio" hidden>
+    <p><strong>Nenhum projeto encontrado com esses filtros.</strong></p>
+    <p>Remova um filtro ou <button type="button" class="limpar" data-limpar>limpe todos os filtros</button></p>
+  </div>
+
+  <div class="mais-wrap" id="mais-wrap" hidden>
+    <button type="button" class="mais" id="mais">Mostrar mais projetos</button>
+  </div>
+
+  <p class="origem">Origem dos dados: projetos de pesquisa, ensino, extensão e inovação cadastrados no <a href="https://www10.unipampa.edu.br/" target="_top">SIPPEE</a> e no Módulo de Projetos Acadêmicos (SAP) do <a href="https://guri.unipampa.edu.br/sap/publico/pesquisarProjetos/" target="_top">GURI</a>.</p>
+</main>
+
+<script>
+/* ===================================================================
+   DADOS
+   tipo: "Pesquisa" | "Ensino" | "Extensão" | "Inovação"
+   foto: URL da foto do(a) coordenador(a) (opcional)
+   Títulos, registros, coordenadores e períodos: reais (página atual).
+   Laboratório, descrição e e-mail: ILUSTRATIVOS — substituir.
+   =================================================================== */
+const PROJETOS = [
+  { tipo: "Pesquisa", laboratorio: "Campus Bagé",
+    titulo: "Algoritmos, Métodos e Ferramentas para a Agricultura Digital",
+    coordenador: "Ana Paula Ludtke Ferreira", registro: "2025.PE.BG.4043",
+    inicio: "2025-03-03", fim: "2029-03-03",
+    descricao: "Desenvolve algoritmos e ferramentas computacionais para coleta, análise de dados e apoio à decisão no campo.",
+    email: "agriculturadigital@unipampa.edu.br", foto: "" },
+  { tipo: "Pesquisa", laboratorio: "LEA",
+    titulo: "Alocação de Recursos Computacionais em Infraestruturas Distribuídas usando Agentic AI",
+    coordenador: "Paulo Silas Severo de Souza", registro: "2026.PE.AL.5788",
+    inicio: "2026-05-18", fim: "2028-12-31",
+    descricao: "Investiga agentes de IA que decidem onde e quando executar aplicações em ambientes de nuvem e borda.",
+    email: "agenticai.lea@unipampa.edu.br", foto: "" },
+  { tipo: "Inovação", laboratorio: "LabISE",
+    titulo: "App ÁGUA PRO MATE",
+    coordenador: "Mauro Fonseca Rodrigues", registro: "2026.IN.AL.6145",
+    inicio: "2026-09-08", fim: "2027-12-31",
+    descricao: "Aplicativo móvel desenvolvido como projeto de inovação tecnológica, com participação de estudantes do curso.",
+    email: "aguapromate@unipampa.edu.br", foto: "" },
+  { tipo: "Inovação", laboratorio: "LESSE",
+    titulo: "App para Meditação na Maternidade",
+    coordenador: "Fabio Paulo Basso", registro: "2026.IN.AL.5943",
+    inicio: "2026-06-23", fim: "2029-06-22",
+    descricao: "Aplicativo de apoio à meditação e ao bem-estar de gestantes e mães no período da maternidade.",
+    email: "meditacao.maternidade@unipampa.edu.br", foto: "" },
+  { tipo: "Pesquisa", laboratorio: "LEA",
+    titulo: "Automação de Tarefas de DevOps usando Modelos de Linguagem",
+    coordenador: "Paulo Silas Severo de Souza", registro: "2025.PE.AL.3963",
+    inicio: "2025-04-01", fim: "2028-04-30",
+    descricao: "Usa modelos de linguagem para automatizar etapas de integração, entrega e operação de software.",
+    email: "devops.llm@unipampa.edu.br", foto: "" }
+];
+
+const TIPOS = ["Pesquisa", "Ensino", "Extensão", "Inovação"];
+const COR = {
+  "Pesquisa": ["var(--pesquisa)", "var(--pesquisa-fundo)"],
+  "Ensino":   ["var(--ensino)",   "var(--ensino-fundo)"],
+  "Extensão": ["var(--extensao)", "var(--extensao-fundo)"],
+  "Inovação": ["var(--inovacao)", "var(--inovacao-fundo)"]
+};
+const POR_PAGINA = 6;
+
+let dados = PROJETOS;
+const estado = { busca: "", tipo: "Todos", lab: "", prof: "", ordem: "recentes", limite: POR_PAGINA };
+
+const $ = (s) => document.querySelector(s);
+const el = (tag, attrs = {}, ...filhos) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v;
+    else if (k === "style") n.style.cssText = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  filhos.flat().forEach((f) => f != null && n.append(f));
+  return n;
+};
+const norm = (s) => (s || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const dataBR = (iso) => iso ? iso.split("-").reverse().join("/") : "—";
+const ordenaPt = (a, b) => a.localeCompare(b, "pt-BR");
+
+/* ---------- filtragem ---------- */
+function passa(p, ignorar) {
+  if (ignorar !== "tipo" && estado.tipo !== "Todos" && p.tipo !== estado.tipo) return false;
+  if (ignorar !== "lab" && estado.lab && p.laboratorio !== estado.lab) return false;
+  if (ignorar !== "prof" && estado.prof && p.coordenador !== estado.prof) return false;
+  if (estado.busca) {
+    const alvo = norm([p.titulo, p.descricao, p.coordenador, p.registro, p.laboratorio, p.tipo].join(" "));
+    if (!norm(estado.busca).split(/\s+/).every((t) => alvo.includes(t))) return false;
+  }
+  return true;
+}
+
+/* ---------- controles ---------- */
+function montaTipos() {
+  const base = dados.filter((p) => passa(p, "tipo"));
+  const box = $("#tipos"); box.innerHTML = "";
+  ["Todos", ...TIPOS].forEach((t) => {
+    const n = t === "Todos" ? base.length : base.filter((p) => p.tipo === t).length;
+    const input = el("input", { type: "radio", name: "tipo", value: t });
+    input.checked = estado.tipo === t;
+    input.disabled = n === 0 && t !== "Todos" && estado.tipo !== t;
+    input.addEventListener("change", () => { estado.tipo = t; estado.limite = POR_PAGINA; render(); });
+    box.append(el("label", { class: "tipo-opcao" }, input,
+      el("span", {},
+        t !== "Todos" ? el("i", { class: "ponto", style: `background:${COR[t][0]}`, "aria-hidden": "true" }) : null,
+        t, " ", el("span", { class: "qtd" }, `(${n})`))));
+  });
+}
+
+function montaSelect(sel, campo, chave, rotuloTodos) {
+  const base = dados.filter((p) => passa(p, chave));
+  const valores = [...new Set(dados.map((p) => p[campo]).filter(Boolean))].sort(ordenaPt);
+  sel.innerHTML = "";
+  sel.append(el("option", { value: "" }, rotuloTodos));
+  valores.forEach((v) => {
+    const n = base.filter((p) => p[campo] === v).length;
+    const o = el("option", { value: v }, `${v} (${n})`);
+    if (n === 0 && estado[chave] !== v) o.disabled = true;
+    sel.append(o);
+  });
+  sel.value = estado[chave];
+  sel.classList.toggle("ativo", !!estado[chave]);
+}
+
+function montaAtivos() {
+  const box = $("#ativos"); box.innerHTML = "";
+  const itens = [];
+  if (estado.busca) itens.push([`“${estado.busca}”`, () => { estado.busca = ""; $("#busca").value = ""; }]);
+  if (estado.tipo !== "Todos") itens.push([estado.tipo, () => (estado.tipo = "Todos")]);
+  if (estado.lab) itens.push([estado.lab, () => (estado.lab = "")]);
+  if (estado.prof) itens.push([estado.prof, () => (estado.prof = "")]);
+  if (!itens.length) return;
+  itens.forEach(([txt, fn]) => box.append(
+    el("button", { type: "button", class: "filtro-ativo", "aria-label": `Remover filtro ${txt}`,
+      onclick: () => { fn(); estado.limite = POR_PAGINA; render(); } },
+      txt, el("span", { class: "x", "aria-hidden": "true" }, "×"))));
+  box.append(el("button", { type: "button", class: "limpar", "data-limpar": "" }, "Limpar filtros"));
+}
+
+/* ---------- cartões ---------- */
+function silhueta() {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 96 96"); svg.setAttribute("class", "sem-foto"); svg.setAttribute("aria-hidden", "true");
+  svg.innerHTML = '<circle cx="48" cy="36" r="16" fill="#9d9d9c"/><path d="M16 92c2-20 15-30 32-30s30 10 32 30z" fill="#9d9d9c"/>';
+  return svg;
+}
+
+async function copiar(texto, botao) {
+  let ok = false;
+  try { await navigator.clipboard.writeText(texto); ok = true; }
+  catch {
+    const ta = el("textarea", { style: "position:fixed;opacity:0" }); ta.value = texto;
+    document.body.append(ta); ta.select();
+    try { ok = document.execCommand("copy"); } catch {}
+    ta.remove();
+  }
+  botao.textContent = ok ? "E-mail copiado" : "Não foi possível copiar";
+  botao.classList.toggle("ok", ok);
+  setTimeout(() => { botao.textContent = "Copiar e-mail"; botao.classList.remove("ok"); }, 2200);
+}
+
+function cartao(p) {
+  const [cor, fundo] = COR[p.tipo] || ["var(--cinza-menu)", "#eee"];
+  const foto = p.foto
+    ? el("img", { src: p.foto, alt: `Foto de ${p.coordenador}`, loading: "lazy" })
+    : silhueta();
+  const labTxt = !p.laboratorio ? null : /^campus/i.test(p.laboratorio) ? p.laboratorio : `Lab. ${p.laboratorio}`;
+
+  return el("li", { class: "projeto", style: `--cor-tipo:${cor};--fundo-tipo:${fundo}` },
+    el("figure", { class: "foto" }, foto),
+    el("div", {},
+      el("div", { class: "etiquetas" },
+        el("span", { class: "etiqueta tipo" }, p.tipo),
+        labTxt ? el("span", { class: "etiqueta lab" }, labTxt) : null),
+      el("h3", {}, p.titulo),
+      el("p", { class: "coord" }, "Coordenador(a): ", el("strong", {}, p.coordenador)),
+      p.descricao ? el("p", { class: "desc" }, p.descricao) : null,
+      el("dl", { class: "dados" },
+        el("div", {}, el("dt", {}, "Registro:"), el("dd", {}, p.registro || "—")),
+        el("div", {}, el("dt", {}, "Período:"), el("dd", {}, `${dataBR(p.inicio)} a ${dataBR(p.fim)}`))),
+      p.email ? el("div", { class: "contato" },
+        el("a", { class: "email", href: `mailto:${p.email}`, target: "_top" },
+          (() => { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            s.setAttribute("width", "20"); s.setAttribute("height", "16"); s.setAttribute("viewBox", "0 0 20 16"); s.setAttribute("aria-hidden", "true");
+            s.innerHTML = '<rect x="1" y="1" width="18" height="14" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M1.5 2 10 9l8.5-7" fill="none" stroke="currentColor" stroke-width="2"/>';
+            return s; })(),
+          p.email),
+        el("button", { type: "button", class: "copiar", "aria-label": `Copiar e-mail ${p.email}`,
+          onclick: (e) => copiar(p.email, e.currentTarget) }, "Copiar e-mail")) : null));
+}
+
+/* ---------- render ---------- */
+function render() {
+  montaTipos();
+  montaSelect($("#f-lab"), "laboratorio", "lab", "Todos os laboratórios");
+  montaSelect($("#f-prof"), "coordenador", "prof", "Todos");
+  montaAtivos();
+
+  let res = dados.filter((p) => passa(p));
+  res.sort(estado.ordem === "titulo"
+    ? (a, b) => ordenaPt(a.titulo, b.titulo)
+    : (a, b) => (b.inicio || "").localeCompare(a.inicio || ""));
+
+  const filtrando = estado.busca || estado.tipo !== "Todos" || estado.lab || estado.prof;
+  $("#contagem").textContent = res.length === 0 ? "Nenhum projeto encontrado"
+    : filtrando ? `${res.length} ${res.length === 1 ? "projeto encontrado" : "projetos encontrados"}`
+    : `Mostrando ${res.length} ${res.length === 1 ? "projeto" : "projetos"}`;
+
+  const lista = $("#lista"); lista.innerHTML = "";
+  res.slice(0, estado.limite).forEach((p) => lista.append(cartao(p)));
+  $("#vazio").hidden = res.length > 0;
+  const resta = res.length - estado.limite;
+  $("#mais-wrap").hidden = resta <= 0;
+  if (resta > 0) $("#mais").textContent = `Mostrar mais projetos (${resta})`;
+  avisaAltura();
+}
+
+/* ---------- eventos ---------- */
+let t;
+$("#busca").addEventListener("input", (e) => {
+  clearTimeout(t);
+  t = setTimeout(() => { estado.busca = e.target.value.trim(); estado.limite = POR_PAGINA; render(); }, 200);
+});
+$("#f-lab").addEventListener("change", (e) => { estado.lab = e.target.value; estado.limite = POR_PAGINA; render(); });
+$("#f-prof").addEventListener("change", (e) => { estado.prof = e.target.value; estado.limite = POR_PAGINA; render(); });
+$("#ordem").addEventListener("change", (e) => { estado.ordem = e.target.value; render(); });
+$("#mais").addEventListener("click", () => { estado.limite += POR_PAGINA; render(); });
+document.addEventListener("click", (e) => {
+  if (e.target.closest("[data-limpar]")) {
+    Object.assign(estado, { busca: "", tipo: "Todos", lab: "", prof: "", limite: POR_PAGINA });
+    $("#busca").value = ""; render(); $("#busca").focus();
+  }
+});
+
+/* ---------- altura automática do iframe ---------- */
+function avisaAltura() {
+  if (window.parent === window) return;
+  const h = Math.ceil(document.documentElement.scrollHeight);
+  window.parent.postMessage({ tipo: "projetos-altura", altura: h }, "*");
+}
+if ("ResizeObserver" in window) new ResizeObserver(avisaAltura).observe(document.body);
+window.addEventListener("load", avisaAltura);
+
+/* ---------- dados externos opcionais (?dados=URL) ---------- */
+(async () => {
+  const url = new URLSearchParams(location.search).get("dados");
+  if (url) {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(r.status);
+      dados = await r.json();
+    } catch (err) {
+      console.warn("Não foi possível carregar os dados externos; usando os dados embutidos.", err);
+    }
+  }
+  render();
+})();
+</script>
+
+<!--
+  NA PÁGINA-MÃE (WordPress, página "Projetos"), substitua o iframe atual por:
+
+  <iframe id="iframe-projetos" src="URL/projetos.html" title="Projetos do curso"
+          style="width:100%;border:0;min-height:600px" scrolling="no"
+          allow="clipboard-write"></iframe>
+  <script>
+    window.addEventListener("message", function (e) {
+      if (e.data && e.data.tipo === "projetos-altura") {
+        document.getElementById("iframe-projetos").style.height = e.data.altura + "px";
+      }
+    });
+  </script>
+-->
+</body>
+</html>
